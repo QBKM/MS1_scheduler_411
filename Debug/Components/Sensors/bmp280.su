@@ -1,0 +1,8 @@
+bmp280.c:77:9:bmp280_read_fixed	56	static
+bmp280.c:103:16:bmp280_compensate_temperature	24	static
+bmp280.c:122:17:bmp280_compensate_pressure	136	static
+bmp280.c:151:16:bmp280_read_calibration_data	8	static
+bmp280.c:179:16:bmp280_read_register16	40	static
+bmp280.c:202:9:BMP280_Init	32	static
+bmp280.c:255:9:BMP280_Read_All	16	static
+bmp280.c:274:10:BMP280_Get_Struct	24	static

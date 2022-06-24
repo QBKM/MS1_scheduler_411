@@ -1,0 +1,4 @@
+API_sensors.c:59:13:handler_sensors	96	static
+API_sensors.c:92:6:API_SENSORS_START	24	static,ignoring_inline_asm
+API_sensors.c:118:6:API_SENSORS_GET_MPU6050	16	static
+API_sensors.c:130:6:API_SENSORS_GET_BMP280	16	static

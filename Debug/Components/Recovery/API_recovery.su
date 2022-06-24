@@ -1,0 +1,6 @@
+API_recovery.c:63:13:handler_recovery	24	static
+API_recovery.c:91:13:process_cmd	16	static
+API_recovery.c:186:13:check_position	8	static
+API_recovery.c:244:6:API_RECOVERY_START	24	static,ignoring_inline_asm
+API_recovery.c:270:6:API_RECOVERY_SEND_CMD	16	static
+API_recovery.c:282:6:API_RECOVERY_GET_MNTR	16	static

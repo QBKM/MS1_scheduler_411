@@ -1,0 +1,5 @@
+TinyFrame.h:135:20:TF_ClearMsg	16	static
+API_HMI.c:76:13:handler_hmi	56	static
+API_HMI.c:103:6:API_HMI_START	24	static,ignoring_inline_asm
+API_HMI.c:125:6:API_HMI_SEND_DATA	44	static
+API_HMI.c:144:6:TF_WriteImpl	24	static

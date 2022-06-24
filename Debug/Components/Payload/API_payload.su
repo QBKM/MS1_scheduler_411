@@ -1,0 +1,6 @@
+API_payload.c:63:13:handler_payload	24	static
+API_payload.c:91:13:process_cmd	16	static
+API_payload.c:167:13:check_position	8	static
+API_payload.c:217:6:API_PAYLOAD_START	24	static,ignoring_inline_asm
+API_payload.c:242:6:API_PAYLOAD_SEND_CMD	16	static
+API_payload.c:254:6:API_PAYLOAD_GET_MNTR	16	static

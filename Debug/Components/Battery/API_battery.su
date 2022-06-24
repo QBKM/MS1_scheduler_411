@@ -1,0 +1,5 @@
+API_battery.c:68:13:handler_battery	56	static
+API_battery.c:103:14:convert_adc_volt	16	static
+API_battery.c:114:30:update_status	24	static
+API_battery.c:137:6:API_BATTERY_START	24	static,ignoring_inline_asm
+API_battery.c:155:6:API_BATTERY_GET_MNTR	16	static

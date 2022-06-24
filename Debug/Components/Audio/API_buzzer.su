@@ -1,0 +1,3 @@
+API_buzzer.c:71:13:handler_buzzer	16	static
+API_buzzer.c:92:6:API_BUZZER_START	24	static,ignoring_inline_asm
+API_buzzer.c:114:6:API_BUZZER_SEND_PARAMETER	24	static

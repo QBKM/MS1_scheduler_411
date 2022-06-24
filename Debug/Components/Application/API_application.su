@@ -1,0 +1,10 @@
+API_application.c:157:13:handler_application	40	static
+API_application.c:309:13:process_deploy	8	static
+API_application.c:323:13:process_user_btn	16	static
+API_application.c:387:13:process_mntr_recov	16	static
+API_application.c:418:13:process_mntr_payload	16	static
+API_application.c:449:13:process_mntr_battery	8	static
+API_application.c:493:6:API_APPLICATION_START	24	static,ignoring_inline_asm
+API_application.c:516:13:callback_timer_window_in	16	static
+API_application.c:526:13:callback_timer_window_out	16	static
+API_application.c:535:6:API_APPLICATION_CALLBACK_ISR	16	static
