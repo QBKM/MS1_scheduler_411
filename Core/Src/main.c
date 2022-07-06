@@ -190,9 +190,17 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	traceISR_ENTER();
 	switch (GPIO_Pin)
 	{
-		case ACCELEROC_Pin:    API_APPLICATION_CALLBACK_ISR(E_APP_ISR_AEROC); 	  NVIC_DisableIRQ(EXTI15_10_IRQn); break;
+		case ACCELEROC_Pin: 
+        API_APPLICATION_CALLBACK_ISR(E_APP_ISR_AEROC); 	  
+        NVIC_DisableIRQ(EXTI15_10_IRQn); 
+        NVIC_DisableIRQ(EXTI9_5_IRQn);
+        NVIC_DisableIRQ(EXTI4_IRQn);
+        NVIC_DisableIRQ(EXTI3_IRQn);
+        NVIC_DisableIRQ(EXTI2_IRQn);
+        break;
+
 		case IHM_DIO1_Pin:  API_APPLICATION_CALLBACK_ISR(E_APP_ISR_RECOV_OPEN);  break;
-		case IHM_DIO2_Pin: API_APPLICATION_CALLBACK_ISR(E_APP_ISR_RECOV_CLOSE); break;
+		case IHM_DIO2_Pin:  API_APPLICATION_CALLBACK_ISR(E_APP_ISR_RECOV_CLOSE); break;
 		default: break;
 	}
 

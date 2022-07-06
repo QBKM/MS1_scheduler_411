@@ -34,7 +34,7 @@ TinyFrame *TinyFrame_TX;
 -- ------------------------------------------------------------- */
 #define HMI_DEFAULT_QUEUE_SIZE      32u 
 #define HMI_DEFAULT_BUFFER_SIZE     16u
-#define HMI_DEFAULT_UART_TIMEOUT    1u
+#define HMI_DEFAULT_UART_TIMEOUT    10u
 #define HMI_DEFAULT_HEADER          "[%x]"
 
 #define HMI_UART_HANDLE &huart1

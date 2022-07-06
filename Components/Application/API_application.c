@@ -47,10 +47,14 @@
 #define WINDOW_IN_TIME              6000u   /* [ms] */
 #define WINDOW_OUT_TIME             10000u  /* [ms] */
 
+/* payload settngs */
+#define PAYLOAD_TRIGGER_TIME        13000u  /* [ms] */
+
 /* include functions */
 #define APPLICATION_INC_FLAG_AEROC      1	/* 1: enable | 0: disable */
 #define APPLICATION_INC_FLAG_WININ      1	/* 1: enable | 0: disable */
 #define APPLICATION_INC_FLAG_WINOUT     1	/* 1: enable | 0: disable */
+#define APPLICATION_INC_FLAG_PAYLOAD    1	/* 1: enable | 0: disable */
 
 #define APPLICATION_INC_DATA_MPU6050    0	/* 1: enable | 0: disable */
 #define APPLICATION_INC_DATA_BMP280     0	/* 1: enable | 0: disable */
@@ -59,11 +63,11 @@
 #define APPLICATION_INC_MNTR_PAYLOAD    1	/* 1: enable | 0: disable */
 #define APPLICATION_INC_MNTR_BATTERY    1	/* 1: enable | 0: disable */
 
-#define APPLICATION_INC_SEND_BUZZER	    1	/* 1: enable | 0: disable */
+#define APPLICATION_INC_SEND_BUZZER	    0	/* 1: enable | 0: disable */
 #define APPLICATION_INC_SEND_HMI		1	/* 1: enable | 0: disable */
-#define APPLICATION_INC_SEND_LEDS		1	/* 1: enable | 0: disable */
+#define APPLICATION_INC_SEND_LEDS		0	/* 1: enable | 0: disable */
 
-#define APPLICATION_INC_USER_BTN        1	/* 1: enable | 0: disable */
+#define APPLICATION_INC_USER_BTN        0	/* 1: enable | 0: disable */
 
 /* macro functions */
 /* link the macro to the associated function if they are enabled above */
@@ -92,6 +96,7 @@ TaskHandle_t TaskHandle_application;
 
 TimerHandle_t TimerHandle_window_in;
 TimerHandle_t TimerHandle_window_out;
+TimerHandle_t TimerHandle_payload;
 
 /* ------------------------------------------------------------- --
    variables
@@ -100,6 +105,7 @@ volatile bool flagAeroc;
 volatile bool flagWinIn;
 volatile bool flagWinOut;
 volatile bool flagDeploy;
+volatile bool flagPayload;
 
 volatile ENUM_APP_ISR_ID_t userBtn;
 
@@ -150,6 +156,7 @@ static void process_user_btn(ENUM_APP_ISR_ID_t ID);
 /* callbacks */
 static void callback_timer_window_in(TimerHandle_t xTimer);
 static void callback_timer_window_out(TimerHandle_t xTimer);
+static void callback_timer_payload(TimerHandle_t xTimer);
 
 /* ------------------------------------------------------------- --
    functions
@@ -160,7 +167,7 @@ static void handler_application(void* parameters)
     xLastWakeTime = xTaskGetTickCount();
 
     /* delay until start */
-    vTaskDelay(pdMS_TO_TICKS(5000));
+    //vTaskDelay(pdMS_TO_TICKS(5000));
 
     BUZZER_SEND_PARAMETER(BUZZER_WAIT_PERIOD, BUZZER_WAIT_DUTYCYCLE);
     LEDS_SEND_PARAMETER(E_LIST_LED_RGB, E_CMD_LEDS_BLUE);
@@ -172,19 +179,23 @@ static void handler_application(void* parameters)
     {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////                                 APPLICATION START                                           ///////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 #if APPLICATION_INC_FLAG_AEROC
         /* This section is used to scan the flagAero variable.
            The variable is set to true by the IT callback when the aerocontact is triggered.
            The purpose is to initialize set the start by starting the window timers */
         if(flagAeroc == true)
-        {
-            /* user indicators */
-            BUZZER_SEND_PARAMETER(BUZZER_ASCEND_PERIOD, BUZZER_ASCEND_DUTYCYCLE);
-            HMI_SEND_DATA(HMI_ID_APP_AEROC, "GO");
-
+        {            
             /* start the window timers */
             xTimerStart(TimerHandle_window_in, 0);
             xTimerStart(TimerHandle_window_out, 0);
+            xTimerStart(TimerHandle_payload, 0);
+
+            /* user indicators */
+            BUZZER_SEND_PARAMETER(BUZZER_ASCEND_PERIOD, BUZZER_ASCEND_DUTYCYCLE);
+            HMI_SEND_DATA(HMI_ID_APP_AEROC, "GO");
+            HMI_SEND_DATA(HMI_ID_APP_PHASE, "ASCEND");
 
             /* reset flag */
             flagAeroc = false;
@@ -198,8 +209,8 @@ static void handler_application(void* parameters)
            The data gathered are the acceleration, angular speed, temperature and the degrees */
         if(API_SENSORS_GET_MPU6050(&mpu6050) == true)
         {
-            HMI_SEND_DATA(HMI_ID_SENS_IMU_X_KALMAN, "%d", mpu6050.data.KalmanAngleX);
-            HMI_SEND_DATA(HMI_ID_SENS_IMU_Y_KALMAN, "%d", mpu6050.data.KalmanAngleY);
+            HMI_SEND_DATA(HMI_ID_SENS_IMU_X_KALMAN, "%2.f", mpu6050.data.KalmanAngleX);
+            HMI_SEND_DATA(HMI_ID_SENS_IMU_Y_KALMAN, "%2.f", mpu6050.data.KalmanAngleY);
         }
         else
         {
@@ -220,6 +231,20 @@ static void handler_application(void* parameters)
         else
         {
             HMI_SEND_DATA(HMI_ID_SENS_BARO_ERROR, "ERROR");
+        }
+#endif
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+#if APPLICATION_INC_FLAG_PAYLOAD
+        /* This section is use to deploy thepayload after a timeout.
+           It may enter in this condition if the variable flagPayload == true.
+           flagPayloaad is set to true by the software timer started by the aerocontact */
+        if(flagPayload == true)
+        {
+            API_PAYLOAD_SEND_CMD(E_CMD_PL_OPEN);
+
+            /* reset flag */
+            flagPayload = false;
         }
 #endif
 
@@ -249,7 +274,7 @@ static void handler_application(void* parameters)
            that can be determined in the simulations. */
         if(flagWinIn == true)
         {
-        	 LEDS_SEND_PARAMETER(E_LIST_LED_RGB, E_CMD_LEDS_GREEN);
+        	LEDS_SEND_PARAMETER(E_LIST_LED_RGB, E_CMD_LEDS_GREEN);
 
 #if APPLICATION_INC_DATA_MPU6050
             if((fabs(mpu6050.data.KalmanAngleY) >= 70)
@@ -297,8 +322,8 @@ static void handler_application(void* parameters)
 #endif
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
     
-    /* wait until next period */
-    vTaskDelayUntil(&xLastWakeTime, TASK_PERIOD_APPLICATION);
+        /* wait until next period */
+        vTaskDelayUntil(&xLastWakeTime, TASK_PERIOD_APPLICATION);
     }
 }
 
@@ -420,21 +445,21 @@ static void process_mntr_payload(STRUCT_PAYLOAD_MNTR_t MNTR_PAYLOAD)
     /* send to hmi the last cmd received by the recovery */
     switch(MNTR_PAYLOAD.last_cmd)
     {
-        case E_CMD_PL_NONE:  HMI_SEND_DATA(HMI_ID_RECOV_LAST_CMD, "NONE");   break;
-        case E_CMD_PL_STOP:  HMI_SEND_DATA(HMI_ID_RECOV_LAST_CMD, "STOP");   break;
-        case E_CMD_PL_OPEN:  HMI_SEND_DATA(HMI_ID_RECOV_LAST_CMD, "OPEN");   break;
-        case E_CMD_PL_CLOSE: HMI_SEND_DATA(HMI_ID_RECOV_LAST_CMD, "CLOSE");  break;
+        case E_CMD_PL_NONE:  HMI_SEND_DATA(HMI_ID_PAYLOAD_LAST_CMD, "NONE");   break;
+        case E_CMD_PL_STOP:  HMI_SEND_DATA(HMI_ID_PAYLOAD_LAST_CMD, "STOP");   break;
+        case E_CMD_PL_OPEN:  HMI_SEND_DATA(HMI_ID_PAYLOAD_LAST_CMD, "OPEN");   break;
+        case E_CMD_PL_CLOSE: HMI_SEND_DATA(HMI_ID_PAYLOAD_LAST_CMD, "CLOSE");  break;
         default: break;
     }
 
     /* send to hmi the status of the recovery */
     switch(MNTR_PAYLOAD.status)
     {
-        case E_STATUS_PL_NONE:    HMI_SEND_DATA(HMI_ID_RECOV_STATUS, "NONE");    break;
-        case E_STATUS_PL_STOP:    HMI_SEND_DATA(HMI_ID_RECOV_STATUS, "STOP");    break;
-        case E_STATUS_PL_RUNNING: HMI_SEND_DATA(HMI_ID_RECOV_STATUS, "RUNNING"); break;
-        case E_STATUS_PL_OPENED:  HMI_SEND_DATA(HMI_ID_RECOV_STATUS, "OPEN");    break;
-        case E_STATUS_PL_CLOSED:  HMI_SEND_DATA(HMI_ID_RECOV_STATUS, "CLOSE");   break;
+        case E_STATUS_PL_NONE:    HMI_SEND_DATA(HMI_ID_PAYLOAD_STATUS, "NONE");    break;
+        case E_STATUS_PL_STOP:    HMI_SEND_DATA(HMI_ID_PAYLOAD_STATUS, "STOP");    break;
+        case E_STATUS_PL_RUNNING: HMI_SEND_DATA(HMI_ID_PAYLOAD_STATUS, "RUNNING"); break;
+        case E_STATUS_PL_OPENED:  HMI_SEND_DATA(HMI_ID_PAYLOAD_STATUS, "OPEN");    break;
+        case E_STATUS_PL_CLOSED:  HMI_SEND_DATA(HMI_ID_PAYLOAD_STATUS, "CLOSE");   break;
         default: break;
     }
 }
@@ -498,14 +523,16 @@ void API_APPLICATION_START(void)
     flagWinIn = false;
     flagWinOut = false;
     flagDeploy = false;
+    flagPayload = false;
     
     /* create the tasks */
-    status = xTaskCreate(handler_application, "task_application", 2*configMINIMAL_STACK_SIZE, NULL, TASK_PRIORITY_APPLICATION, &TaskHandle_application);
+    status = xTaskCreate(handler_application, "task_application", 5*configMINIMAL_STACK_SIZE, NULL, TASK_PRIORITY_APPLICATION, &TaskHandle_application);
     configASSERT(status == pdPASS);
 
     /* init the temporal window timers */
     TimerHandle_window_in  = xTimerCreate("timer_window_in", pdMS_TO_TICKS(WINDOW_IN_TIME), pdFALSE, (void*)0, callback_timer_window_in);
     TimerHandle_window_out = xTimerCreate("timer_window_out", pdMS_TO_TICKS(WINDOW_OUT_TIME), pdFALSE, (void*)0, callback_timer_window_out);
+    TimerHandle_payload = xTimerCreate("timer_payload", pdMS_TO_TICKS(PAYLOAD_TRIGGER_TIME), pdFALSE, (void*)0, callback_timer_payload);
 }
 
 /** ************************************************************* *
@@ -526,6 +553,16 @@ static void callback_timer_window_in(TimerHandle_t xTimer)
 static void callback_timer_window_out(TimerHandle_t xTimer)
 {
     flagWinOut = true;
+}
+
+/** ************************************************************* *
+ * @brief       
+ * 
+ * @param       xTimer 
+ * ************************************************************* **/
+static void callback_timer_payload(TimerHandle_t xTimer)
+{
+    flagPayload = true;
 }
 
 /** ************************************************************* *
